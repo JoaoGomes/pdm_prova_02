@@ -12,13 +12,15 @@ Chave API Tempo - 49cc8c821cd2aff9af04c9f98c36eb74
 */
 
 import React, { useState, useEffect } from 'react';
-import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Button, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, ImageBackground } from 'react-native';
 import Constants from 'expo-constants';
 import * as SQLite from 'expo-sqlite';
 import axios from 'axios';
 
 const API_KEY ='49cc8c821cd2aff9af04c9f98c36eb74';
 const db = SQLite.openDatabase("db.db");
+const img = require('./assets/fundo.jpg');
+
 
 function Items({ done: doneHeading, onPressItem }) {
     const [items, setItems] = React.useState(null);
@@ -30,7 +32,7 @@ function Items({ done: doneHeading, onPressItem }) {
         });
     }, []);
 
-    const heading = doneHeading ? "Completed" : "Todo";
+    const heading = doneHeading ? "Completed" : "Cidades";
     
     if (items === null || items.length === 0) {
         return null;
@@ -38,21 +40,29 @@ function Items({ done: doneHeading, onPressItem }) {
     
     return (
         <View style={styles.sectionContainer}>
-            <Text style={styles.sectionHeading}>{heading}</Text>
+            <Text style={styles.sectionHeading}>Cidades</Text>
             {items.map(({ id, done, nome, temp, tempmin, tempmax }) => (
             <TouchableOpacity
                 key={id}
                 onPress={() => onPressItem && onPressItem(id)}
                 style={{
-                    backgroundColor: done ? "#1c9963" : "#fff",
+                    backgroundColor: done ? "#8b0000" : "#fff",
                     borderColor: "#000",
                     borderWidth: 1,
                     padding: 8
                 }}>
                 <Text style={{ color: done ? "#fff" : "#000"}}>Cidade: {nome}</Text>
-                <Text style={{ color: done ? "#fff" : "#000"}}>Temp. atual: {temp}</Text>
-                <Text style={{ color: done ? "#fff" : "#000"}}>Temp. mín.:{tempmin}</Text>
-                <Text style={{ color: done ? "#fff" : "#000"}}>Temp. max.:{tempmax}</Text>
+                <Text style={{ color: done ? "#fff" : "#000"}}>Temp. atual: {temp}&#176;C</Text>
+                <Text style={{ color: done ? "#fff" : "#000"}}>Temp. mín.: {tempmin}&#176;C</Text>
+                <Text style={{ color: done ? "#fff" : "#000"}}>Temp. max.: {tempmax}&#176;C</Text>
+                <View>  
+                    {done === 0 ? 
+                    <Text>Aqui</Text> : 
+                    <View>
+                        <Button title="Apagar"></Button>
+                        <Button title="Cancelar"></Button>
+                    </View>}
+                </View>
             </TouchableOpacity>
             ))}
         </View>
@@ -62,7 +72,7 @@ function Items({ done: doneHeading, onPressItem }) {
 export default function App() {
 
     const [text, setText] = React.useState(null)
-    const [forceUpdate, forceUpdateId] = useForceUpdate()
+    const [forceUpdate, forceUpdateId] = useForceUpdate();
     const [data, setData] = useState({});
     const [error, setError] = useState(false);
     const [temp, setTemp] = useState(null);
@@ -125,47 +135,49 @@ export default function App() {
     }
 
     return (
-        <View style={styles.container}>
-            <Text style={styles.heading}>Previsões</Text>
-            <View style={styles.flexRow}>
-            <TextInput
-                onChangeText={text => setText(text)}
-                onSubmitEditing={() => {
-                    add(text);
-                    setText(null);
-                }}
-                placeholder="Digite uma cidade"
-                style={styles.input}
-                nome={text}
-                />
-        </View>
-        <ScrollView style={styles.listArea}>
-            <Items
-                key={`forceupdate-todo-${forceUpdateId}`}
-                done={false}
-                onPressItem={id =>
-                    db.transaction(
-                        tx => {
-                            tx.executeSql(`update items set done = 1 where id = ?;`, [ id ]);
-                        },
-                        null,
-                        forceUpdate
-                    )
-                }/>
-                <Items
-                    done
-                    key={`forceupdate-done-${forceUpdateId}`}
-                    onPressItem={id =>
-                        db.transaction(
-                            tx => {
-                                tx.executeSql(`delete from items where id = ?;`,[id]);
-                            },
-                            null,
-                            forceUpdate
-                        )
-                    }/>
-        </ScrollView>
-    </View>
+        <ImageBackground source={img} style={styles.image}>
+            <View style={styles.container}>
+                <Text style={styles.heading}>Previsões</Text>
+                <View style={styles.flexRow}>
+                <TextInput
+                    onChangeText={text => setText(text)}
+                    onSubmitEditing={() => {
+                        add(text);
+                        setText(null);
+                    }}
+                    placeholder="Digite uma cidade"
+                    style={styles.input}
+                    nome={text}
+                    />
+                </View>
+                <ScrollView style={styles.listArea}>
+                    <Items
+                        key={`forceupdate-todo-${forceUpdateId}`}
+                        done={false}
+                        onPressItem={id =>
+                            db.transaction(
+                                tx => {
+                                    tx.executeSql(`update items set done = 1 where id = ?;`, [ id ]);
+                                },
+                                null,
+                                forceUpdate
+                            )
+                        }/>
+                    <Items
+                        done
+                        key={`forceupdate-done-${forceUpdateId}`}
+                        onPressItem={id =>
+                            db.transaction(
+                                tx => {
+                                    tx.executeSql(`delete from items where id = ?;`,[id]);
+                                },
+                                null,
+                                forceUpdate
+                            )
+                        }/>
+                </ScrollView>
+            </View>
+        </ImageBackground>
 );
 }
 
@@ -176,7 +188,6 @@ export default function App() {
 
 const styles = StyleSheet.create({
     container: {
-        backgroundColor: "#fff",
         flex: 1,
         paddingTop: Constants.statusBarHeight
     },
@@ -198,7 +209,6 @@ const styles = StyleSheet.create({
         padding: 8
     },
     listArea: {
-        backgroundColor: "#f0f0f0",
         flex: 1,
         paddingTop: 16
     },
@@ -209,5 +219,12 @@ const styles = StyleSheet.create({
     sectionHeading: {
         fontSize: 18,
         marginBottom: 8
+    },
+    image: {
+        flex:1, 
+        resizeMode:"cover", 
+        width: '100%',
+        height: '100%',
+        justifyContent:"center"        
     }
 });
