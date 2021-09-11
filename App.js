@@ -7,12 +7,11 @@ Matrícula: 20191130081
 Data: 13/09/2021
 
 Prova 02 - Aplicativo de previsão de tempo
-Chave API cotações - 52a061d2fc4c4bae7b73756b5f58d706
 Chave API Tempo - 49cc8c821cd2aff9af04c9f98c36eb74
 */
 
 import React, { useState, useEffect } from 'react';
-import { Button, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, ImageBackground } from 'react-native';
+import { Image, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, ImageBackground } from 'react-native';
 import Constants from 'expo-constants';
 import * as SQLite from 'expo-sqlite';
 import axios from 'axios';
@@ -21,48 +20,52 @@ const API_KEY ='49cc8c821cd2aff9af04c9f98c36eb74';
 const db = SQLite.openDatabase("db.db");
 const img = require('./assets/fundo.jpg');
 
-
-function Items({ done: doneHeading, onPressItem }) {
-    const [items, setItems] = React.useState(null);
-    React.useEffect(() => {
+function Items({ done: doneHeading, onPressItem, onLongPressItem }) {
+    const [items, setItems] = useState(null);
+    useEffect(() => {
         db.transaction(tx => {
-            tx.executeSql(`select * from items where done = ?;`,[doneHeading ? 1 : 0],
+            tx.executeSql(`select * from items where done = ? order by id desc;`,[doneHeading ? 1 : 0],
                 (_, { rows: { _array } }) => setItems(_array)
             );
         });
     }, []);
 
-    const heading = doneHeading ? "Completed" : "Cidades";
+    const heading = doneHeading ? "Cidades selecionadas" : "Cidades";
     
     if (items === null || items.length === 0) {
         return null;
     }
     
+    //const img_weather = {uri: "http://openweathermap.org/img/wn/"+ Items.figure + "@2x.png"}
+
     return (
         <View style={styles.sectionContainer}>
-            <Text style={styles.sectionHeading}>Cidades</Text>
-            {items.map(({ id, done, nome, temp, tempmin, tempmax }) => (
+            <Text style={styles.sectionHeading}>{heading}</Text>
+            {items.map(({ id, done, nome, temp, tempmin, tempmax, status, figure }) => (
             <TouchableOpacity
                 key={id}
                 onPress={() => onPressItem && onPressItem(id)}
+                onLongPress={() => onLongPressItem && onLongPressItem(id)}
                 style={{
                     backgroundColor: done ? "#8b0000" : "#fff",
                     borderColor: "#000",
                     borderWidth: 1,
                     padding: 8
                 }}>
-                <Text style={{ color: done ? "#fff" : "#000"}}>Cidade: {nome}</Text>
+                                    <View>
+                    <Image source={{uri: "http://openweathermap.org/img/wn/"+ figure + "@2x.png"}} style={styles.weatherImage}/> 
+                </View>
+
+                <Text style={{ color: done ? "#fff" : "#000"}}>{nome}</Text>
                 <Text style={{ color: done ? "#fff" : "#000"}}>Temp. atual: {temp}&#176;C</Text>
                 <Text style={{ color: done ? "#fff" : "#000"}}>Temp. mín.: {tempmin}&#176;C</Text>
-                <Text style={{ color: done ? "#fff" : "#000"}}>Temp. max.: {tempmax}&#176;C</Text>
+                <Text style={{ color: done ? "#fff" : "#000"}}>Temp. máx.: {tempmax}&#176;C</Text>
+                <Text style={{ color: done ? "#fff" : "#000"}}>Status: {status}</Text>
+
                 <View>  
-                    {done === 0 ? 
-                    <Text>Aqui</Text> : 
-                    <View>
-                        <Button title="Apagar"></Button>
-                        <Button title="Cancelar"></Button>
-                    </View>}
+                    {done === 0 ? null : <Text>Segure para apagar</Text>}
                 </View>
+
             </TouchableOpacity>
             ))}
         </View>
@@ -73,15 +76,16 @@ export default function App() {
 
     const [text, setText] = React.useState(null)
     const [forceUpdate, forceUpdateId] = useForceUpdate();
-    const [data, setData] = useState({});
     const [error, setError] = useState(false);
     const [temp, setTemp] = useState(null);
     const [tempmin, setTempMin] = useState(null);
     const [tempmax, setTempMax] = useState(null);
+    const [status, setStatus] = useState(null);
+    const [figure, setFigure] = useState(null);
 
-    React.useEffect(() => {
+    useEffect(() => {
         db.transaction(tx => {
-            tx.executeSql("create table if not exists items (id integer primary key not null, done int, nome text, temp int, tempmin int, tempmax int);");
+            tx.executeSql("create table if not exists items (id integer primary key not null, done int, nome text, temp int, tempmin int, tempmax int, status text, figure text);");
         });
     }, []);
 
@@ -94,13 +98,10 @@ export default function App() {
         }
         
         dataFromApi(text);
-        //Atualizar temperatura com setTemp chamando a função API
-        //Alguma coisa como temp => setTemp(text) Uma função que leva para a API com o nome da cidade como parâmetro.
-    
 
         db.transaction(
             tx => {
-                tx.executeSql("insert into items (done, nome, temp, tempmin, tempmax) values (0, ?, ?, ? , ?)", [text, temp, tempmin, tempmax]);
+                tx.executeSql("insert into items (done, nome, temp, tempmin, tempmax, status, figure) values (0, ?, ?, ?, ?, ?, ?)", [text, temp, tempmin, tempmax, status, figure]);
                 tx.executeSql("select * from items", [], (_, { rows }) =>
                     console.log(JSON.stringify(rows))
                 );
@@ -110,22 +111,24 @@ export default function App() {
         );
     }
 
+
     async function dataFromApi(cidade){
         try{
             const response = await axios.get(`https://api.openweathermap.org/data/2.5/weather?q=${cidade}&exclude=hourly,minutely&units=metric&lang=pt-br&appid=${API_KEY}`);
             if(response.data.id>1){
-                setTemp(null);
-                setTempMin(null);
-                setTempMax(null);
                 setTemp(response.data.main.temp);
-                setTempMin(response.data.main.temp_min);
                 setTempMax(response.data.main.temp_max);
+                setTempMin(response.data.main.temp_min);
+                setStatus(response.data.weather[0].main);
+                setFigure(response.data.weather[0].icon);            
             }else{
                 const arrayResponse = [];
                 arrayResponse.push(response.data);
                 setTemp(arrayResponse);
                 setTempMin(arrayResponse);
                 setTempMax(arrayResponse);
+                setStatus(arrayResponse);
+                setFigure(arrayResponse);
             }
         }
         catch(err){
@@ -133,6 +136,8 @@ export default function App() {
             console.log(err);
         }
     }
+
+
 
     return (
         <ImageBackground source={img} style={styles.image}>
@@ -169,16 +174,26 @@ export default function App() {
                         onPressItem={id =>
                             db.transaction(
                                 tx => {
-                                    tx.executeSql(`delete from items where id = ?;`,[id]);
+                                    //trecho modificado
+                                    tx.executeSql(`update items set done = 0 where id = ?;`, [ id ]);
                                 },
                                 null,
                                 forceUpdate
                             )
-                        }/>
+                        }
+                        onLongPressItem={id =>
+                        db.transaction(
+                            tx => {
+                                tx.executeSql(`delete from items where id = ?;`,[id]);
+                            },
+                            null,
+                            forceUpdate
+                        )
+                    }/>
                 </ScrollView>
             </View>
         </ImageBackground>
-);
+    );
 }
 
     function useForceUpdate() {
@@ -226,5 +241,9 @@ const styles = StyleSheet.create({
         width: '100%',
         height: '100%',
         justifyContent:"center"        
+    },
+    weatherImage: {
+        width: 50,
+        height: 50
     }
 });
