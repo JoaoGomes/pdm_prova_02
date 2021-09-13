@@ -179,7 +179,8 @@ export default function App() {
                             forceUpdate
                         )
                     }/>
-                                        <Items
+                                        
+                    <Items
                         key={`forceupdate-todo-${forceUpdateId}`}
                         done={false}
                         onPressItem={id =>
