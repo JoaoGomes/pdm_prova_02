@@ -12,13 +12,13 @@ Chave API Tempo - 49cc8c821cd2aff9af04c9f98c36eb74
 
 import React, { useState, useEffect } from 'react';
 import { Image, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, ImageBackground } from 'react-native';
-import Constants from 'expo-constants';
 import * as SQLite from 'expo-sqlite';
+import Constants from 'expo-constants';
 import axios from 'axios';
 
 const API_KEY ='49cc8c821cd2aff9af04c9f98c36eb74';
 const db = SQLite.openDatabase("db.db");
-const img = require('./assets/fundo.jpg');
+const img = require('./assets/background.jpg');
 
 function Items({ done: doneHeading, onPressItem, onLongPressItem }) {
     const [items, setItems] = useState(null);
@@ -47,23 +47,23 @@ function Items({ done: doneHeading, onPressItem, onLongPressItem }) {
                 onPress={() => onPressItem && onPressItem(id)}
                 onLongPress={() => onLongPressItem && onLongPressItem(id)}
                 style={{
-                    backgroundColor: done ? "#8b0000" : "#fff",
-                    borderColor: "#000",
+                    backgroundColor: done ? "#708090cc" : "#ffffff88",
+                    borderColor: "#708090",
                     borderWidth: 1,
-                    padding: 8
-                }}>
-                                    <View>
+                    padding: 8 }}>
+                <View style={{flexDirection: 'row'}}>
+                    <View style={styles.texto}>
+                        <Text style={{ fontSize: 25, color: done ? "#fff" : "#000"}}>{nome}</Text>
+                        <Text style={{ color: done ? "#fff" : "#000"}}>Temp. atual: {temp}&#176;C</Text>
+                        <Text style={{ color: done ? "#fff" : "#000"}}>Temp. mín.: {tempmin}&#176;C</Text>
+                        <Text style={{ color: done ? "#fff" : "#000"}}>Temp. máx.: {tempmax}&#176;C</Text>
+                        <Text style={{ color: done ? "#fff" : "#000"}}>Status: {status}</Text>
+                    </View>
                     <Image source={{uri: "http://openweathermap.org/img/wn/"+ figure + "@2x.png"}} style={styles.weatherImage}/> 
                 </View>
 
-                <Text style={{ color: done ? "#fff" : "#000"}}>{nome}</Text>
-                <Text style={{ color: done ? "#fff" : "#000"}}>Temp. atual: {temp}&#176;C</Text>
-                <Text style={{ color: done ? "#fff" : "#000"}}>Temp. mín.: {tempmin}&#176;C</Text>
-                <Text style={{ color: done ? "#fff" : "#000"}}>Temp. máx.: {tempmax}&#176;C</Text>
-                <Text style={{ color: done ? "#fff" : "#000"}}>Status: {status}</Text>
-
                 <View>  
-                    {done === 0 ? null : <Text>Segure para apagar</Text>}
+                    {done === 0 ? null : <Text style={styles.alert}>Segure para apagar</Text>}
                 </View>
 
             </TouchableOpacity>
@@ -144,30 +144,19 @@ export default function App() {
             <View style={styles.container}>
                 <Text style={styles.heading}>Previsões</Text>
                 <View style={styles.flexRow}>
-                <TextInput
-                    onChangeText={text => setText(text)}
-                    onSubmitEditing={() => {
-                        add(text);
-                        setText(null);
-                    }}
-                    placeholder="Digite uma cidade"
-                    style={styles.input}
-                    nome={text}
-                    />
+                    <TextInput
+                        onChangeText={text => setText(text)}
+                        onSubmitEditing={() => {
+                            add(text);
+                            setText(null);
+                        }}
+                        placeholder="Digite uma cidade"
+                        style={styles.input}
+                        placeholderTextColor="#fff"
+                        nome={text}
+                        />
                 </View>
                 <ScrollView style={styles.listArea}>
-                    <Items
-                        key={`forceupdate-todo-${forceUpdateId}`}
-                        done={false}
-                        onPressItem={id =>
-                            db.transaction(
-                                tx => {
-                                    tx.executeSql(`update items set done = 1 where id = ?;`, [ id ]);
-                                },
-                                null,
-                                forceUpdate
-                            )
-                        }/>
                     <Items
                         done
                         key={`forceupdate-done-${forceUpdateId}`}
@@ -190,60 +179,90 @@ export default function App() {
                             forceUpdate
                         )
                     }/>
+                                        <Items
+                        key={`forceupdate-todo-${forceUpdateId}`}
+                        done={false}
+                        onPressItem={id =>
+                            db.transaction(
+                                tx => {
+                                    tx.executeSql(`update items set done = 1 where id = ?;`, [ id ]);
+                                },
+                                null,
+                                forceUpdate
+                            )
+                        }/>
+
                 </ScrollView>
             </View>
         </ImageBackground>
     );
 }
 
-    function useForceUpdate() {
-        const [value, setValue] = useState(0);
-        return [() => setValue(value + 1), value];
-    }
+function useForceUpdate() {
+    const [value, setValue] = useState(0);
+    return [() => setValue(value + 1), value];
+}
 
 const styles = StyleSheet.create({
+    alert: {
+        color: "#ffffff",
+        fontSize: 20,
+        padding: 10,
+        textAlign: 'center', 
+    },
     container: {
         flex: 1,
-        paddingTop: Constants.statusBarHeight
+        paddingTop: Constants.statusBarHeight,
+        color: "#fff"
     },
     heading: {
-        fontSize: 20,
+        fontSize: 30,
         fontWeight: "bold",
-        textAlign: "center"
+        textAlign: "center",
+        color: "#fff"
     },
     flexRow: {
-        flexDirection: "row"
+        flexDirection: "row",
+        color: "#fff",
     },
     input: {
-        borderColor: "#4630eb",
+        borderColor: "#708090",
         borderRadius: 4,
         borderWidth: 1,
+        color: "#fff",
         flex: 1,
         height: 48,
         margin: 16,
-        padding: 8
+        padding: 10
     },
     listArea: {
         flex: 1,
         paddingTop: 16
     },
     sectionContainer: {
-        marginBottom: 16,
-        marginHorizontal: 16
+        marginBottom: 15,
+        marginHorizontal: 10
     },
     sectionHeading: {
         fontSize: 18,
-        marginBottom: 8
+        marginBottom: 8,
+        fontSize: 25
     },
     image: {
         flex:1, 
         resizeMode:"cover", 
         width: '100%',
         height: '100%',
-        justifyContent:"center"        
+        justifyContent:"center"
     },
     weatherImage: {
-        width: 50,
-        height: 50
+        width: '50%',
+        height: '100%',
+        resizeMode: 'cover'
+    },
+    texto: {
+        width: '50%',
+        height: '100%',
+        resizeMode: 'cover'
     }
 });
